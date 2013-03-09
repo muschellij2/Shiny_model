@@ -4,6 +4,9 @@ library(ggplot2)
 library(xtable)
 library(car)
 
+##########################
+### Generating Random Data
+##########################
 set.seed(20130306)
 Age <- rnorm(100, mean=55, sd=4)
 rr <- runif(15)
@@ -25,13 +28,8 @@ rando <- data.frame(Age, Enrollment_GCS_Add, Group_Assigned, ICH_Pre_Rand_10, IC
 rando$Under_15cc <- Under_15cc
 rando$Group_Assigned <- Group_Assigned
 
-
-# Returns a logical vector of which values in `x` are within the min and max
-# values of `range`.
-in_range <- function(x, range) {
-  x >= min(range) & x <= max(range)
-}
-input <- list(y_var = "Bad_Outcome_Day_180", x_var = c("Enrollment_GCS_Add", "Age", "ICH_Pre_Rand_10", "Group_Assigned", "ICH_EOT_10", "IVH_EOT_10"))
+#### just for testing - not used
+input <- list(y_var = "Bad_Outcome_Day_180", x_var = c("Enrollment_GCS_Add", "Age", "ICH_Pre_Rand_10", "Group_Assigned", "ICH_EOT_10", "IVH_EOT_10"), fam="quasibinomial()")
 
 
 shinyServer(function(input, output) {
@@ -43,22 +41,36 @@ shinyServer(function(input, output) {
   # ------------------------------------------------------------------
   # Functions for creating models and printing summaries
 
-	run_mod <- function(formula){
+	## RUN_MOD takes in  formula - runs a 
+	run_mod <- function(formula, fam){
 		
 		### runs model and makes table 
-		mod <- glm(formula=formula, data=rando, family=binomial())
-	
+		## make fam the actual family
+		ornames <- c("Odds Ratio", "Relative Risk", "Beta Estimate")
+		pick <- grepl("binomial", fam)*1 + grepl("poisson", fam)*2 + grepl("gauss", fam)*3
+		estname <- ornames[pick]
+		fam <- eval(parse(text=fam))
+		mod <- glm(formula=formula, data=rando, family=fam)
 		s <- summary(mod)
 		cos <- coef(s)
+		torz <- colnames(cos)[grepl("Pr", colnames(cos))]
+		torz <- gsub("Pr\\(>\\|([t|z])\\|\\)", "\\1", torz)
 		est <- cos[, "Estimate"] 
-		CI <- sapply(c(-1,1), function(one) est + one *qnorm(0.975)*cos[, "Std. Error"])
-		est <- exp(est)
-		CI <- exp(CI)
+		
+		## grab either t or z critical point for CI
+		crit_point <- switch(torz,
+			"t"= qt(0.975, df=mod$df.residual),
+			"z" = qnorm(0.975))
+		CI <- sapply(c(-1,1), function(one) est + one * crit_point*cos[, "Std. Error"])
+
+		est <- fam$linkinv(est)
+		CI <- fam$linkinv(CI)
 		CI <- apply(CI, 1, function(x) sprintf("(%4.3f, %4.3f)", x[1], x[2]))
-		p.value <- sapply(cos[, "Pr(>|z|)"], sprintf, fmt="%04.3f")
+		p.value <- sapply(cos[, paste0("Pr(>|",torz, "|)")], sprintf, fmt="%04.3f")
 		est <- sapply(est, sprintf, fmt="%4.3f")
-		mat <- data.frame(cbind(Var=names(est), "Odds Ratio"=est, "95% CI"= CI, "P-value"=p.value))
-		colnames(mat) <- c("Var", "Odds Ratio", "95% CI", "P-value")
+		
+		mat <- data.frame(cbind(Var=names(est), TMP=est, "95% CI"= CI, "P-value"=p.value))
+		colnames(mat) <- c("Var", estname, "95% CI", "P-value")
 		labels <- c("Intercept" = "(Intercept)", 
 				"Enrollment GCS" = "Enrollment_GCS_Add",                      
 	    		"Age" = "Age",   
@@ -77,7 +89,7 @@ shinyServer(function(input, output) {
 		mat$Var <- NULL
 		N <- rep("", ncol(mat))
 		mat <- rbind(mat, N=N)
-		mat["N", "Odds Ratio"] <- length(mod$y)
+		mat["N", estname] <- length(mod$y)
 		#print(mat$"Odds Ratio")
 
 		xmat <- xtable(mat)
@@ -87,7 +99,9 @@ shinyServer(function(input, output) {
 
 	getmod <- reactive({ 
 		formula <- paste(input$y_var, "~", paste0(input$x_var, collapse="+ "))
-		run_mod(formula)
+		fam <- input$fam
+		# print(fam)
+		run_mod(formula, fam=fam)
 	})
 
 

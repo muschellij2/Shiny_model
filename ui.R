@@ -22,7 +22,17 @@ shinyUI(pageWithSidebar(
                   choices = c("Day 180" = "Bad_Outcome_Day_180",
 							"Day 365" = "Bad_Outcome_Day_365"),
                   selected = "Day 180"
-                 )
+                 ), 
+      selectInput(inputId = "fam",
+                  label = "Family - all use default links",
+                  choices = c("binomial" = "binomial()",
+							"quasibinomial" = "quasibinomial()",
+							"linear" = "gaussian()",
+							"Poisson" = "poisson()",
+							"quasipoisson"= "quasipoisson()"
+							),
+                  selected = "binomial"
+                 )                 
     )
 
   ), 
