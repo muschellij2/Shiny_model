@@ -1,6 +1,5 @@
 rm(list=ls())
 options(stringsAsFactors=FALSE)
-library(ggplot2)
 library(xtable)
 library(car)
 
