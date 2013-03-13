@@ -22,6 +22,7 @@ Under_15cc <- grps[((ICH_EOT_10 < 1.5) + 1)]
 Under_15cc <- factor(Under_15cc, levels= grps)
 Bad_Outcome_Day_180 <- rbinom(100, 1, prob=0.3)
 Bad_Outcome_Day_365 <- rbinom(100, 1, prob=0.3)
+Bad_Outcome_Day_365[c(1, 3, 5, 7)] <- NA
 
 rando <- data.frame(Age, Enrollment_GCS_Add, Group_Assigned, ICH_Pre_Rand_10, ICH_EOT_10, IVH_EOT_10, Bad_Outcome_Day_180, Bad_Outcome_Day_365)
 rando$Under_15cc <- Under_15cc
@@ -36,13 +37,31 @@ shinyServer(function(input, output) {
 	dataset <- function(){
 		rando
 	}
+# 	data <- reactive(function(){
+# 	  
+# 	  path <- input$url
+# 	  
+# 	  #translate relative paths to server-friendly paths
+# 	  if (substr(input$url, 0, 2) == "./"){
+# 	    path <- paste("./www/", substring(input$url, 3), sep="")
+# 	  }      
+# 	  
+# 	  
+# 	  data <- read.csv(path, row.names=1)
+# 	  
+# 	  #ensure that each row is a gene.
+# 	  if (input$orientation == "Sample"){
+# 	    data <- t(data)
+# 	  }
+# 	  data
+# 	})  
 
   # ------------------------------------------------------------------
   # Functions for creating models and printing summaries
 
 	## RUN_MOD takes in  formula - runs a 
 	run_mod <- function(formula, fam){
-		
+	  
 		### runs model and makes table 
 		## make fam the actual family
 		ornames <- c("Odds Ratio", "Relative Risk", "Beta Estimate")
@@ -52,24 +71,30 @@ shinyServer(function(input, output) {
 		mod <- glm(formula=formula, data=rando, family=fam)
 		s <- summary(mod)
 		cos <- coef(s)
+    #print(cos)
 		torz <- colnames(cos)[grepl("Pr", colnames(cos))]
 		torz <- gsub("Pr\\(>\\|([t|z])\\|\\)", "\\1", torz)
 		est <- cos[, "Estimate"] 
-		
+		nms <- rownames(cos)
 		## grab either t or z critical point for CI
 		crit_point <- switch(torz,
 			"t"= qt(0.975, df=mod$df.residual),
 			"z" = qnorm(0.975))
-		CI <- sapply(c(-1,1), function(one) est + one * crit_point*cos[, "Std. Error"])
-
+		CI <- matrix(sapply(c(-1,1), function(one) est + one * crit_point*cos[, "Std. Error"]), ncol=2)
 		est <- fam$linkinv(est)
 		CI <- fam$linkinv(CI)
 		CI <- apply(CI, 1, function(x) sprintf("(%4.3f, %4.3f)", x[1], x[2]))
 		p.value <- sapply(cos[, paste0("Pr(>|",torz, "|)")], sprintf, fmt="%04.3f")
 		est <- sapply(est, sprintf, fmt="%4.3f")
-		
-		mat <- data.frame(cbind(Var=names(est), TMP=est, "95% CI"= CI, "P-value"=p.value))
-		colnames(mat) <- c("Var", estname, "95% CI", "P-value")
+# 		print(est)
+# 		print(p.value)
+#     print(CI)
+#     print(names(est))
+#     names(est) <- names(CI)
+		mat <- data.frame(as.matrix(cbind(Var=nms, TMP=est, "95% CI"= CI, "P-value"=p.value)))
+    cn <- c("Var", estname, "95% CI", "P-value")
+#     print(cn)
+		colnames(mat) <- cn
 		labels <- c("Intercept" = "(Intercept)", 
 				"Enrollment GCS" = "Enrollment_GCS_Add",                      
 	    		"Age" = "Age",   
@@ -81,7 +106,8 @@ shinyServer(function(input, output) {
 	)
 		labels <- data.frame(cbind(Var = labels, Label=names(labels)))
 		mat <- merge(mat, labels, sort=FALSE, all.y=TRUE, by="Var")	
-		# mat$Label[is.na(mat$Label)] <- mat$Var[is.na(mat$Label)]
+
+    # mat$Label[is.na(mat$Label)] <- mat$Var[is.na(mat$Label)]
 		rownames(mat) <- mat$Label
 		mat <- mat[labels$Label, ]
 		mat$Label <- NULL
@@ -97,7 +123,7 @@ shinyServer(function(input, output) {
 
 
 	getmod <- reactive({ 
-		formula <- paste(input$y_var, "~", paste0(input$x_var, collapse="+ "))
+		formula <- paste(input$y_var, "~  ", paste0(c("1", input$x_var), collapse="+ "))
 		fam <- input$fam
 		# print(fam)
 		run_mod(formula, fam=fam)

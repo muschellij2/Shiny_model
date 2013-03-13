@@ -1,5 +1,6 @@
 library(shiny)
 library(car)
+source("server.R")
 shinyUI(pageWithSidebar(
 
   headerPanel("Models!"),
@@ -36,10 +37,8 @@ shinyUI(pageWithSidebar(
     )
 
   ), 
-  
- mainPanel(
- 	htmlOutput(outputId = "mod_linear_text"),
- 	plotOutput(outputId = "main_plot")
+  	mainPanel( htmlOutput(outputId = "mod_linear_text"),
+	 	plotOutput(outputId = "main_plot")
     )
 
   
