@@ -34,9 +34,21 @@ input <- list(y_var = "Bad_Outcome_Day_180", x_var = c("Enrollment_GCS_Add", "Ag
 
 shinyServer(function(input, output) {
 
-	dataset <- function(){
-		rando
-	}
+	dataset <- reactive({
+	    if (is.null(input$files)) {
+	      # User has not uploaded a file yet
+	      df <- rando
+	    } else {
+	    	print(input$files$datapath)
+		    df <- read.csv(input$files$datapath, header=TRUE, stringsAsFactors =TRUE)
+	    	
+	    }
+	    #print("FILES")
+	    #print(head(df))
+	    #print(input$files)
+	   
+	})
+	
 # 	data <- reactive(function(){
 # 	  
 # 	  path <- input$url
@@ -55,20 +67,21 @@ shinyServer(function(input, output) {
 # 	  }
 # 	  data
 # 	})  
+	
 
   # ------------------------------------------------------------------
   # Functions for creating models and printing summaries
 
 	## RUN_MOD takes in  formula - runs a 
-	run_mod <- function(formula, fam){
-	  
+	run_mod <- function(formula, fam, df){
+		# print(head(df))
 		### runs model and makes table 
 		## make fam the actual family
 		ornames <- c("Odds Ratio", "Relative Risk", "Beta Estimate")
 		pick <- grepl("binomial", fam)*1 + grepl("poisson", fam)*2 + grepl("gauss", fam)*3
 		estname <- ornames[pick]
 		fam <- eval(parse(text=fam))
-		mod <- glm(formula=formula, data=rando, family=fam)
+		mod <- glm(formula=formula, data=df, family=fam)
 		s <- summary(mod)
 		cos <- coef(s)
     #print(cos)
@@ -123,10 +136,12 @@ shinyServer(function(input, output) {
 
 
 	getmod <- reactive({ 
+		df <- dataset()
+		
 		formula <- paste(input$y_var, "~  ", paste0(c("1", input$x_var), collapse="+ "))
 		fam <- input$fam
 		# print(fam)
-		run_mod(formula, fam=fam)
+		run_mod(formula, fam=fam, df=df)
 	})
 
 
@@ -135,11 +150,19 @@ shinyServer(function(input, output) {
 	xmat <- tmp$xmat
 	print(xmat, type="html")
   })
-  
+
+	output$Controls <- renderUI({
+		df <- dataset()		
+		checkboxGroupInput("x_var", "Choose Covariates", colnames(df))
+	})  
+	output$Outcome <- renderUI({
+		df <- dataset()		
+		selectInput("y_var", "Choose Outcome", colnames(df))
+	})    
 	output$main_plot <- renderPlot({
 	  	tmp <- getmod()
 		mod <- tmp$mod
-
+		print(mod)
 	avPlots(mod)
 	})
   
