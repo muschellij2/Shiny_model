@@ -3,7 +3,7 @@ library(car)
 source("server.R")
 shinyUI(pageWithSidebar(
 
-  headerPanel("Models!"),
+  headerPanel("Models!: source at https://github.com/muschellij2/Shiny_model"),
 
   sidebarPanel(
 
