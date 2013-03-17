@@ -26,7 +26,7 @@ shinyUI(pageWithSidebar(
 							# "Day 365" = "Bad_Outcome_Day_365"),
                   # selected = "Day 180"
                  # ), 
-               
+		submitButton(text = "Run Model"), 
       selectInput(inputId = "fam",
                   label = "Family - all use default links",
                   choices = c("binomial" = "binomial()",

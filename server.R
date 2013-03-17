@@ -162,8 +162,8 @@ shinyServer(function(input, output) {
 	output$main_plot <- renderPlot({
 	  	tmp <- getmod()
 		mod <- tmp$mod
-		print(mod)
-	avPlots(mod)
+		# print(mod)
+	avPlots(mod, ask=FALSE)
 	})
   
 
