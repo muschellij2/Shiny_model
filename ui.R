@@ -6,7 +6,7 @@ shinyUI(pageWithSidebar(
   headerPanel("Models!"),
 
   sidebarPanel(
-    helpText(HTML("All source available on <a href = \"https://github.com/muschellij2/Shiny_model\">Github</a>")),
+  	helpText(HTML("All source available on <a href = \"https://github.com/muschellij2/Shiny_model\">Github</a>")),
 
     wellPanel(
     	# checkboxGroupInput("x_var", "Variables:",                    
@@ -19,10 +19,10 @@ shinyUI(pageWithSidebar(
     		# "Less or equal to 15cc at EOT" = "Under_15cc"
     		# ), selected=c("Enrollment GCS", "Age", "Pre-Randomization ICH (per 10cc)", "Surgery vs. Medical")),
     fileInput("files", "Read Data", multiple=FALSE),
-	selectInput("dtype", "Data Type:",
-            c("csv" = "csv",
-              "rda" = "rda",
-              "xls" = "xls")), 
+    selectInput("dtype", "Data Type:",
+    	c("csv" = "csv",
+	    "rda" = "rda")), 
+#    	"xls" = "xls"	    
     uiOutput("Controls"),      
     uiOutput("Outcome"),      
       # selectInput(inputId = "y_var",
