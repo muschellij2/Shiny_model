@@ -2,6 +2,7 @@ rm(list=ls())
 options(stringsAsFactors=FALSE)
 library(xtable)
 library(car)
+library(xlsx)
 
 ##########################
 ### Generating Random Data
@@ -40,8 +41,16 @@ shinyServer(function(input, output) {
 	      df <- rando
 	    } else {
 	    	print(input$files$datapath)
-		    df <- read.csv(input$files$datapath, header=TRUE, stringsAsFactors =TRUE)
-	    	
+	    	get_rda <- function(rda){
+	    		x = load(rda)
+	    		df <- get(x[1])
+	    		rm(list=x)
+	    		return(df)
+	    	}
+	    	df <- switch(input$dtype, 
+	    		"csv" = read.csv(input$files$datapath, header=TRUE, stringsAsFactors =TRUE),
+	    			"xls" = read.xlsx(input$files$datapath, 1),
+	    			"rda" = get_rda(input$files$datapath))	    	
 	    }
 	    #print("FILES")
 	    #print(head(df))
@@ -108,22 +117,24 @@ shinyServer(function(input, output) {
     cn <- c("Var", estname, "95% CI", "P-value")
 #     print(cn)
 		colnames(mat) <- cn
-		labels <- c("Intercept" = "(Intercept)", 
-				"Enrollment GCS" = "Enrollment_GCS_Add",                      
-	    		"Age" = "Age",   
-	    		"Pre-Randomization ICH (per 10cc)" = "ICH_Pre_Rand_10",	                   
-	    		"Surgery vs. Medical" = "Group_AssignedSurgical", 
-				"Less or equal to 15cc at EOT" = "Under_15ccLess or equal to 15cc at EOT",    		
-	    		"End of Treatment ICH (per 10cc)" = "ICH_EOT_10", 
-	    		"End of Treatment IVH (per 10cc)" = "IVH_EOT_10"
-	)
-		labels <- data.frame(cbind(Var = labels, Label=names(labels)))
-		mat <- merge(mat, labels, sort=FALSE, all.y=TRUE, by="Var")	
+		
+		
+		# labels <- c("Intercept" = "(Intercept)", 
+				# "Enrollment GCS" = "Enrollment_GCS_Add",                      
+	    		# "Age" = "Age",   
+	    		# "Pre-Randomization ICH (per 10cc)" = "ICH_Pre_Rand_10",	                   
+	    		# "Surgery vs. Medical" = "Group_AssignedSurgical", 
+				# "Less or equal to 15cc at EOT" = "Under_15ccLess or equal to 15cc at EOT",    		
+	    		# "End of Treatment ICH (per 10cc)" = "ICH_EOT_10", 
+	    		# "End of Treatment IVH (per 10cc)" = "IVH_EOT_10"
+	# )
+		# labels <- data.frame(cbind(Var = labels, Label=names(labels)))
+		# mat <- merge(mat, labels, sort=FALSE, all.y=TRUE, by="Var")	
 
-    # mat$Label[is.na(mat$Label)] <- mat$Var[is.na(mat$Label)]
-		rownames(mat) <- mat$Label
-		mat <- mat[labels$Label, ]
-		mat$Label <- NULL
+    # # mat$Label[is.na(mat$Label)] <- mat$Var[is.na(mat$Label)]
+		# rownames(mat) <- mat$Label
+		# mat <- mat[labels$Label, ]
+		# mat$Label <- NULL
 		mat$Var <- NULL
 		N <- rep("", ncol(mat))
 		mat <- rbind(mat, N=N)

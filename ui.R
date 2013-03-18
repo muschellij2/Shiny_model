@@ -3,9 +3,10 @@ library(car)
 source("server.R")
 shinyUI(pageWithSidebar(
 
-  headerPanel("Models!: source at https://github.com/muschellij2/Shiny_model"),
+  headerPanel("Models!"),
 
   sidebarPanel(
+    helpText(HTML("All source available on <a href = \"https://github.com/muschellij2/Shiny_model\">Github</a>")),
 
     wellPanel(
     	# checkboxGroupInput("x_var", "Variables:",                    
@@ -17,7 +18,11 @@ shinyUI(pageWithSidebar(
     		# "End of Treatment IVH (per 10cc)" = "IVH_EOT_10",
     		# "Less or equal to 15cc at EOT" = "Under_15cc"
     		# ), selected=c("Enrollment GCS", "Age", "Pre-Randomization ICH (per 10cc)", "Surgery vs. Medical")),
-    fileInput("files", "CSV data", multiple=FALSE),
+    fileInput("files", "Read Data", multiple=FALSE),
+	selectInput("dtype", "Data Type:",
+            c("csv" = "csv",
+              "rda" = "rda",
+              "xls" = "xls")), 
     uiOutput("Controls"),      
     uiOutput("Outcome"),      
       # selectInput(inputId = "y_var",
